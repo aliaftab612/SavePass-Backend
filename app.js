@@ -25,7 +25,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origins: [
+    origin: [
       process.env.CLIENT_URL,
       'https://onrender.com',
       'https://www.onrender.com',
