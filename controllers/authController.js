@@ -90,13 +90,19 @@ exports.login = async (req, res, next) => {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
+      priority: 'high',
+      domain:
+        process.env.NODE_ENV === 'production' ? process.env.CLIENT_DOMAIN : '',
     });
 
     res.cookie('isAuthenticated', true, {
       httpOnly: false,
-      sameSite: 'lax',
-      secure: false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
+      priority: 'high',
+      domain:
+        process.env.NODE_ENV === 'production' ? process.env.CLIENT_DOMAIN : '',
     });
 
     res.status(200).json({
