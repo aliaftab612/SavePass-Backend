@@ -23,17 +23,12 @@ app.use(
 
 app.use(helmet());
 
-app.use(
+/*app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL,
-      'https://onrender.com',
-      'https://www.onrender.com',
-      'www.onrender.com',
-    ],
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
-);
+);*/
 
 app.use(cookieParser());
 
