@@ -16,7 +16,7 @@ exports.getUser = (req, res) => {
   }
 };
 
-exports.updateUser = (req, res) => {
+exports.updateUser = async (req, res) => {
   try {
     const user = req.user;
 
@@ -43,7 +43,7 @@ exports.updateUser = (req, res) => {
     user.profilePhotoUrl = req.body.profilePhotoUrl;
     user.dateUserUpdated = new Date();
 
-    user.save();
+    await user.save();
     user.generalPasswords = undefined;
     req.user.__v = undefined;
 

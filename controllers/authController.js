@@ -29,6 +29,13 @@ exports.signup = async (req, res, next) => {
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
     });
 
+    res.cookie('isAuthenticated', true, {
+      httpOnly: false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
+      maxAge: process.env.JWT_EXPIRES_IN * 1000,
+    });
+
     // Send response
     res.status(201).json({
       status: 'success',
@@ -80,6 +87,13 @@ exports.login = async (req, res, next) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
+      maxAge: process.env.JWT_EXPIRES_IN * 1000,
+    });
+
+    res.cookie('isAuthenticated', true, {
+      httpOnly: false,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
@@ -138,8 +152,15 @@ exports.protect = async (req, res, next) => {
 exports.logout = async (req, res, next) => {
   try {
     res.cookie('jwt', 'loggedout', {
-      httpOnly: true,
-      sameSite: 'none',
+      hhttpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
+      expires: new Date(Date.now()),
+    });
+
+    res.cookie('isAuthenticated', false, {
+      httpOnly: false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       expires: new Date(Date.now()),
     });

@@ -92,12 +92,14 @@ exports.deleteGeneralPassword = async (req, res) => {
     let isGeneralPasswordDeleted = false;
 
     user.generalPasswords.every((element, index) => {
-      if (element._id == req.params.id) {
+      if (element.id === req.params.id) {
         user.generalPasswords.splice(index, 1);
         isGeneralPasswordDeleted = true;
 
         return false;
       }
+
+      return true;
     });
 
     await user.save();
@@ -156,6 +158,8 @@ exports.updateGeneralPassword = async (req, res) => {
 
         return false;
       }
+
+      return true;
     });
 
     await user.save();
