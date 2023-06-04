@@ -87,14 +87,14 @@ exports.login = async (req, res, next) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
     });
 
     res.cookie('isAuthenticated', true, {
       httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
     });
