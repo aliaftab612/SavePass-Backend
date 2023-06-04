@@ -94,8 +94,8 @@ exports.login = async (req, res, next) => {
 
     res.cookie('isAuthenticated', true, {
       httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
+      sameSite: 'lax',
+      secure: false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
     });
 
