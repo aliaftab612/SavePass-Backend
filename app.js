@@ -21,12 +21,14 @@ app.use(
   })
 );
 
-app.use(helmet());
-
 app.use(
-  cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        'script-src-attr': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", '*'],
+      },
+    },
   })
 );
 
@@ -40,14 +42,13 @@ app.use(xss());
 
 app.use(hpp());
 
+app.use(express.static(`frontend`));
+
 app.use('/api/v1', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/general-passwords', generalpasswordsRouter);
 app.use('*', (req, res) => {
-  res.status(404).json({
-    status: 'fail',
-    message: 'Route not found!',
-  });
+  res.sendFile(`index.html`, { root: `frontend` });
 });
 
 module.exports = app;

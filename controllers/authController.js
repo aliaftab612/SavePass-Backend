@@ -24,14 +24,14 @@ exports.signup = async (req, res, next) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
     });
 
     res.cookie('isAuthenticated', true, {
       httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
     });
@@ -87,7 +87,7 @@ exports.login = async (req, res, next) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
       priority: 'high',
@@ -95,7 +95,7 @@ exports.login = async (req, res, next) => {
 
     res.cookie('isAuthenticated', true, {
       httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       maxAge: process.env.JWT_EXPIRES_IN * 1000,
       priority: 'high',
@@ -155,14 +155,14 @@ exports.logout = async (req, res, next) => {
   try {
     res.cookie('jwt', 'loggedout', {
       hhttpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       expires: new Date(Date.now()),
     });
 
     res.cookie('isAuthenticated', false, {
       httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       secure: process.env.NODE_ENV === 'production' ? true : false,
       expires: new Date(Date.now()),
     });
