@@ -32,6 +32,15 @@ app.use(
   })
 );
 
+if (process.env.NODE_ENV === 'development') {
+  app.use(
+    cors({
+      origin: process.env.DEVELOPMENT_CORS_ORIGIN,
+      credentials: true,
+    })
+  );
+}
+
 app.use(cookieParser());
 
 app.use(express.json({ limit: '10kb' }));
