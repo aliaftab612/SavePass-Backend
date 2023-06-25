@@ -6,19 +6,25 @@ exports.getAllGeneralPasswords = async (req, res) => {
   try {
     const user = req.user;
 
-    const features = new APIFeatures({ ...req.query }, [
+    const generalPasswordResults = new APIFeatures({ ...req.query }, [
       ...user.generalPasswords,
     ])
       .filter()
-      .sort()
-      .paginate();
+      .sort();
+
+    const totalPages = Math.ceil(
+      generalPasswordResults.generalPasswords.length / 10
+    );
+
+    const generalPasswordsPaginateResults = generalPasswordResults.paginate();
 
     res.status(200).json({
       status: 'success',
-      page: features.query.page,
-      results: features.generalPasswords.length,
+      page: generalPasswordsPaginateResults.query.page,
+      totalPages,
+      results: generalPasswordsPaginateResults.generalPasswords.length,
       data: {
-        generalPasswords: features.generalPasswords,
+        generalPasswords: generalPasswordsPaginateResults.generalPasswords,
       },
     });
   } catch (ex) {
