@@ -12,8 +12,10 @@ exports.getAllGeneralPasswords = async (req, res) => {
       .filter()
       .sort();
 
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+
     const totalPages = Math.ceil(
-      generalPasswordResults.generalPasswords.length / 10
+      generalPasswordResults.generalPasswords.length / limit
     );
 
     const generalPasswordsPaginateResults = generalPasswordResults.paginate();
