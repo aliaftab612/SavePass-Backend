@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const argon2 = require('argon2');
+const crypto = require('crypto');
+const cryptoHelpers = require('../utility/cryptoHelpers');
 
 const generalPasswordsSchema = mongoose.Schema({
   website: {
@@ -54,14 +56,31 @@ const userSchema = mongoose.Schema({
     max: [20, 'Password must be at most 20 characters!'],
     select: false,
   },
+  passwordHashingSalt: {
+    type: String,
+    required: [true, 'Salt is required!'],
+    select: false,
+  },
 });
 
 userSchema.methods.hashPassword = async function (password) {
-  return await argon2.hash(password);
+  this.passwordHashingSalt = crypto.randomBytes(32).toString('hex');
+
+  const key = await cryptoHelpers.performExtraHashingOnLoginHash(
+    password,
+    this.passwordHashingSalt
+  );
+
+  return await argon2.hash(key);
 };
 
 userSchema.methods.comparePassword = async function (password) {
-  return await argon2.verify(this.password, password);
+  const key = await cryptoHelpers.performExtraHashingOnLoginHash(
+    password,
+    this.passwordHashingSalt
+  );
+
+  return await argon2.verify(this.password, key);
 };
 
 const User = new mongoose.model('User', userSchema);

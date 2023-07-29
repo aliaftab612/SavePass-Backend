@@ -63,7 +63,7 @@ exports.login = async (req, res, next) => {
 
     // Check if user exists
     const user = await User.findOne({ email: req.body.email }).select(
-      '+password'
+      '+password +passwordHashingSalt'
     );
 
     // if user is not found then return error
