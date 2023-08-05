@@ -8,25 +8,13 @@ exports.getAllGeneralPasswords = async (req, res) => {
 
     const generalPasswordResults = new APIFeatures({ ...req.query }, [
       ...user.generalPasswords,
-    ])
-      .filter()
-      .sort();
-
-    const limit = req.query.limit ? Number(req.query.limit) : 10;
-
-    const totalPages = Math.ceil(
-      generalPasswordResults.generalPasswords.length / limit
-    );
-
-    const generalPasswordsPaginateResults = generalPasswordResults.paginate();
+    ]).sortByDateCreatedOrDateUpdated();
 
     res.status(200).json({
       status: 'success',
-      page: generalPasswordsPaginateResults.query.page,
-      totalPages,
-      results: generalPasswordsPaginateResults.generalPasswords.length,
+      results: generalPasswordResults.generalPasswords.length,
       data: {
-        generalPasswords: generalPasswordsPaginateResults.generalPasswords,
+        generalPasswords: generalPasswordResults.generalPasswords,
       },
     });
   } catch (ex) {
@@ -54,9 +42,18 @@ exports.createGeneralPassword = async (req, res) => {
       password: req.body.password,
     };
 
-    user.generalPasswords.push(newGeneralPasword);
+    const cretionDate = new Date();
+
+    const generalPasswordsListLength = user.generalPasswords.push({
+      ...newGeneralPasword,
+      dateCreated: cretionDate,
+      dateUpdated: cretionDate,
+    });
 
     await user.save();
+
+    newGeneralPasword._id =
+      user.generalPasswords[generalPasswordsListLength - 1]._id;
 
     res.status(201).json({
       status: 'success',

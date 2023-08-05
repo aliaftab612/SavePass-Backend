@@ -16,7 +16,7 @@ class APIFeatures {
     return this;
   }
 
-  sort() {
+  sortByDateCreatedOrDateUpdated() {
     if (
       !(
         this.query.sort === 'dateCreated' ||

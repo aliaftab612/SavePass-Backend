@@ -12,10 +12,14 @@ exports.signup = async (req, res, next) => {
       });
     }
 
+    const creationDate = new Date();
+
     // Create new user
     const newUser = new User();
     newUser.email = req.body.email;
     newUser.password = await newUser.hashPassword(req.body.password);
+    newUser.dateUserCreated = creationDate;
+    newUser.dateUserUpdated = creationDate;
 
     await newUser.save();
 
