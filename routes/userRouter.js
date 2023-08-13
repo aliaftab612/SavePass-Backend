@@ -11,4 +11,8 @@ router
   .get(usersController.getUser)
   .patch(usersController.updateUser);
 
+router
+  .route('/updateAppLockoutTime')
+  .patch(usersController.updateAppLockoutTime);
+
 module.exports = router;

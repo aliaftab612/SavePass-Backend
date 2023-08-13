@@ -56,6 +56,16 @@ const userSchema = mongoose.Schema({
     max: [20, 'Password must be at most 20 characters!'],
     select: false,
   },
+  userSettings: {
+    hashIterations: {
+      type: Number,
+      required: [true, 'hashIterations is required!'],
+    },
+    appLockoutMinutes: {
+      type: Number,
+      default: 15,
+    },
+  },
   passwordHashingSalt: {
     type: String,
     required: [true, 'Salt is required!'],

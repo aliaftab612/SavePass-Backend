@@ -57,3 +57,36 @@ exports.updateUser = async (req, res) => {
     exceptionHandler.handleException(ex, res);
   }
 };
+
+//Need to move to userSettings route once we create more settings.
+exports.updateAppLockoutTime = async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!req.body.appLockoutMinutes) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'appLockoutMinutes is mandatory.',
+      });
+    }
+
+    if (!Number(req.body.appLockoutMinutes)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'appLockoutMinutes should be a number.',
+      });
+    }
+
+    user.userSettings.appLockoutMinutes = req.body.appLockoutMinutes;
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        appLockoutMinutes: req.body.appLockoutMinutes,
+      },
+    });
+  } catch (ex) {
+    exceptionHandler.handleException(ex, res);
+  }
+};

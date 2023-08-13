@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const exceptionHandler = require('../utility/exceptionHandler');
 const jwt = require('jsonwebtoken');
+const RevokedToken = require('../models/RevokedToken');
 
 exports.signup = async (req, res, next) => {
   try {
@@ -12,6 +13,14 @@ exports.signup = async (req, res, next) => {
       });
     }
 
+    if (!req.body.hashIterations) {
+      return res.status(400).json({
+        status: 'fail',
+        message:
+          'Please provide number of iterations used while hashing master password!',
+      });
+    }
+
     const creationDate = new Date();
 
     // Create new user
@@ -20,29 +29,17 @@ exports.signup = async (req, res, next) => {
     newUser.password = await newUser.hashPassword(req.body.password);
     newUser.dateUserCreated = creationDate;
     newUser.dateUserUpdated = creationDate;
+    newUser.userSettings.hashIterations = req.body.hashIterations;
 
     await newUser.save();
 
     // Create token
     const token = signToken(newUser._id);
 
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      maxAge: process.env.JWT_EXPIRES_IN * 1000,
-    });
-
-    res.cookie('isAuthenticated', true, {
-      httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      maxAge: process.env.JWT_EXPIRES_IN * 1000,
-    });
-
     // Send response
     res.status(201).json({
       status: 'success',
+      token,
     });
   } catch (ex) {
     exceptionHandler.handleException(ex, res);
@@ -53,6 +50,28 @@ const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: +process.env.JWT_EXPIRES_IN,
   });
+};
+
+exports.preLogin = async (req, res) => {
+  try {
+    let hashIterations = 10000;
+    if (req.body.email) {
+      const user = await User.findOne({ email: req.body.email });
+
+      if (user) {
+        hashIterations = user.userSettings.hashIterations;
+      }
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        hashIterations,
+      },
+    });
+  } catch (ex) {
+    exceptionHandler.handleException(ex, res);
+  }
 };
 
 exports.login = async (req, res, next) => {
@@ -89,24 +108,9 @@ exports.login = async (req, res, next) => {
     // If everything ok, send token to client
     const token = signToken(user._id);
 
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      maxAge: process.env.JWT_EXPIRES_IN * 1000,
-      priority: 'high',
-    });
-
-    res.cookie('isAuthenticated', true, {
-      httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      maxAge: process.env.JWT_EXPIRES_IN * 1000,
-      priority: 'high',
-    });
-
     res.status(200).json({
       status: 'success',
+      token,
     });
   } catch (ex) {
     exceptionHandler.handleException(ex, res);
@@ -117,8 +121,11 @@ exports.protect = async (req, res, next) => {
   try {
     // Check if token is provided
     let token;
-    if (req.cookies.jwt) {
-      token = req.cookies.jwt;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
     }
 
     // If token is not provided then return error
@@ -128,9 +135,18 @@ exports.protect = async (req, res, next) => {
         message: 'You are not logged in! Please log in to get access.',
       });
     }
-
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    //Check if JWT is revoked
+    const revokedToken = await RevokedToken.findOne({ token });
+
+    if (revokedToken) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'Token invalid!',
+      });
+    }
 
     // Check if user still exists
     const currentUser = await User.findById(decoded.id);
@@ -157,24 +173,33 @@ exports.protect = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
   try {
-    res.cookie('jwt', 'loggedout', {
-      hhttpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      expires: new Date(Date.now()),
-    });
+    let token;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    }
 
-    res.cookie('isAuthenticated', false, {
-      httpOnly: false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      expires: new Date(Date.now()),
-    });
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      const revokedToken = new RevokedToken();
+      revokedToken.token = token;
+      revokedToken.expireAt = new Date(+decoded.exp * 1000);
+
+      await revokedToken.save();
+    }
 
     res.status(200).json({
       status: 'success',
     });
   } catch (ex) {
+    if (ex instanceof jwt.JsonWebTokenError) {
+      return res.status(200).json({
+        status: 'success',
+      });
+    }
     exceptionHandler.handleException(ex, res);
   }
 };
