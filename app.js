@@ -12,6 +12,10 @@ const cors = require('cors');
 
 const app = express();
 
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', process.env.NUMBER_OF_PROXIES);
+}
+
 app.use(
   cors({
     origin: process.env.CORS_ORIGINS
@@ -20,6 +24,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.get('/ip', (request, response) => response.send(request.ip));
 
 app.use(
   '/api',
