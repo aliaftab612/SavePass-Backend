@@ -13,6 +13,15 @@ const cors = require('cors');
 const app = express();
 
 app.use(
+  cors({
+    origin: process.env.CORS_ORIGINS
+      ? [...process.env.CORS_ORIGINS.split(',')]
+      : null,
+    credentials: true,
+  })
+);
+
+app.use(
   '/api',
   rateLimit({
     max: 100,
@@ -29,15 +38,6 @@ app.use(
         'img-src': ["'self'", '*', 'data:'],
       },
     },
-  })
-);
-
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGINS
-      ? [...process.env.CORS_ORIGINS.split(',')]
-      : null,
-    credentials: true,
   })
 );
 
