@@ -13,7 +13,7 @@ const cors = require('cors');
 const app = express();
 
 if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', process.env.NUMBER_OF_PROXIES);
+  app.set('trust proxy', Number.parseInt(process.env.NUMBER_OF_PROXIES));
 }
 
 app.use(
