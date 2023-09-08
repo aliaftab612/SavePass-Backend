@@ -32,14 +32,12 @@ app.use(
   })
 );
 
-if (process.env.NODE_ENV === 'development') {
-  app.use(
-    cors({
-      origin: process.env.DEVELOPMENT_CORS_ORIGIN,
-      credentials: true,
-    })
-  );
-}
+app.use(
+  cors({
+    origin: [...process.env.CORS_ORIGINS.split(',')],
+    credentials: true,
+  })
+);
 
 app.use(cookieParser());
 
@@ -51,13 +49,14 @@ app.use(xss());
 
 app.use(hpp());
 
-app.use(express.static(`frontend`));
-
 app.use('/api/v1', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/general-passwords', generalpasswordsRouter);
 app.use('*', (req, res) => {
-  res.sendFile(`index.html`, { root: `frontend` });
+  res.status(404).json({
+    status: 'fail',
+    message: 'Route not found!',
+  });
 });
 
 module.exports = app;
