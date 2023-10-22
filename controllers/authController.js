@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const exceptionHandler = require('../utility/exceptionHandler');
 const jwt = require('jsonwebtoken');
+const speakeasy = require('speakeasy');
 const RevokedToken = require('../models/RevokedToken');
 
 exports.signup = async (req, res, next) => {
@@ -52,6 +53,32 @@ const signToken = (id) => {
   });
 };
 
+exports.verifyMasterPassword = async (req, res, next) => {
+  try {
+    if (!req.body.password) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Please provide password',
+      });
+    }
+
+    const user = await User.findById(req.user._id).select(
+      '+password +passwordHashingSalt'
+    );
+
+    if (!(await user.comparePassword(req.body.password))) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'User Verfication Failed!',
+      });
+    }
+
+    next();
+  } catch (ex) {
+    exceptionHandler.handleException(ex, res);
+  }
+};
+
 exports.preLogin = async (req, res) => {
   try {
     let hashIterations = 10000;
@@ -86,7 +113,7 @@ exports.login = async (req, res, next) => {
 
     // Check if user exists
     const user = await User.findOne({ email: req.body.email }).select(
-      '+password +passwordHashingSalt'
+      '+password +passwordHashingSalt +authenticatorAppSecret'
     );
 
     // if user is not found then return error
@@ -105,6 +132,30 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    if (user.authenticatorAppSecret) {
+      if (!req.body.twoFactorProvider || !req.body.twoFactorVerificationCode) {
+        return res.status(400).json({
+          status: 'fail',
+          errType: 'twoFactorRequired',
+          message:
+            'Two Factor Authentication required, please provide twoFactorProvider and twoFactorVerificationCode',
+        });
+      }
+
+      const [twoFactorVerified, status, errorMessage] = twoFactorVerification(
+        user.authenticatorAppSecret,
+        req.body.twoFactorProvider,
+        req.body.twoFactorVerificationCode
+      );
+
+      if (!twoFactorVerified) {
+        return res.status(status).json({
+          status: 'fail',
+          message: errorMessage,
+        });
+      }
+    }
+
     // If everything ok, send token to client
     const token = signToken(user._id);
 
@@ -115,6 +166,29 @@ exports.login = async (req, res, next) => {
   } catch (ex) {
     exceptionHandler.handleException(ex, res);
   }
+};
+
+const twoFactorVerification = (
+  authenticatorAppSecret,
+  twoFactorProvider,
+  twoFactorVerificationCode
+) => {
+  if (twoFactorProvider === 'AuthenticatorApp') {
+    if (
+      !speakeasy.totp.verify({
+        secret: authenticatorAppSecret,
+        encoding: 'base32',
+        token: twoFactorVerificationCode,
+        window: 1,
+      })
+    ) {
+      return [false, 401, 'Invalid Authenticator App token!'];
+    }
+  } else {
+    return [false, 400, `${twoFactorProvider} two factor provider not found!`];
+  }
+
+  return [true];
 };
 
 exports.protect = async (req, res, next) => {

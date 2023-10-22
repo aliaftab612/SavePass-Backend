@@ -69,6 +69,10 @@ const userSchema = mongoose.Schema({
     required: [true, 'Salt is required!'],
     select: false,
   },
+  authenticatorAppSecret: {
+    type: String,
+    select: false,
+  },
 });
 
 userSchema.methods.hashPassword = async function (password) {

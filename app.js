@@ -1,5 +1,6 @@
 const express = require('express');
 const generalpasswordsRouter = require('./routes/generalPasswordsRouter');
+const twoFactorAuthRouter = require('./routes/twoFactorAuthRouter');
 const authRouter = require('./routes/authRouter');
 const userRouter = require('./routes/userRouter');
 const cookieParser = require('cookie-parser');
@@ -58,6 +59,7 @@ app.use(hpp());
 app.use('/api/v1', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/general-passwords', generalpasswordsRouter);
+app.use('/api/v1/two-factor', twoFactorAuthRouter);
 app.use('*', (req, res) => {
   res.status(404).json({
     status: 'fail',
