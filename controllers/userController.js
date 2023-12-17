@@ -1,92 +1,60 @@
-const exceptionHandler = require('../utility/exceptionHandler');
+const ApiError = require('../utility/ApiError');
+const asyncHander = require('../utility/asyncHandler');
 
 exports.getUser = (req, res) => {
-  try {
-    req.user.generalPasswords = undefined;
-    req.user.__v = undefined;
+  req.user.generalPasswords = undefined;
+  req.user.__v = undefined;
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user: req.user,
-      },
-    });
-  } catch (ex) {
-    exceptionHandler.handleException(ex, res);
-  }
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: req.user,
+    },
+  });
 };
 
-exports.updateUser = async (req, res) => {
-  try {
-    const user = req.user;
+exports.updateUser = asyncHander(async (req, res) => {
+  const user = req.user;
 
-    if (
-      !(req.body.firstName || req.body.lastName || req.body.profilePhotoUrl)
-    ) {
-      res.status(400).json({
-        status: 'fail',
-        message: 'Either name or profilePhotoUrl is mandatory',
-      });
-      return;
-    }
-
-    if (!req.body.firstName && req.body.lastName) {
-      res.status(400).json({
-        status: 'fail',
-        message: 'firstName is mandatory when lastName is provided',
-      });
-      return;
-    }
-
-    user.firstName = req.body.firstName;
-    user.lastName = req.body.lastName;
-    user.profilePhotoUrl = req.body.profilePhotoUrl;
-    user.dateUserUpdated = new Date();
-
-    await user.save();
-    user.generalPasswords = undefined;
-    req.user.__v = undefined;
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user: user,
-      },
-    });
-  } catch (ex) {
-    exceptionHandler.handleException(ex, res);
+  if (!req.body.firstName) {
+    throw new ApiError(400, 'firstName is mandatory!');
   }
-};
+
+  user.firstName = req.body.firstName;
+  user.lastName = req.body.lastName;
+  user.dateUserUpdated = new Date();
+
+  await user.save();
+  user.generalPasswords = undefined;
+  req.user.__v = undefined;
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: user,
+    },
+  });
+});
 
 //Need to move to userSettings route once we create more settings.
-exports.updateAppLockoutTime = async (req, res) => {
-  try {
-    const user = req.user;
+exports.updateAppLockoutTime = asyncHander(async (req, res) => {
+  const user = req.user;
 
-    if (!req.body.appLockoutMinutes) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'appLockoutMinutes is mandatory.',
-      });
-    }
-
-    if (!Number(req.body.appLockoutMinutes)) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'appLockoutMinutes should be a number.',
-      });
-    }
-
-    user.userSettings.appLockoutMinutes = req.body.appLockoutMinutes;
-    await user.save();
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        appLockoutMinutes: req.body.appLockoutMinutes,
-      },
-    });
-  } catch (ex) {
-    exceptionHandler.handleException(ex, res);
+  if (!req.body.appLockoutMinutes) {
+    throw new ApiError(400, 'appLockoutMinutes is mandatory.');
   }
-};
+
+  if (!Number(req.body.appLockoutMinutes)) {
+    throw new ApiError(400, 'appLockoutMinutes should be a number.');
+  }
+
+  user.userSettings.appLockoutMinutes = req.body.appLockoutMinutes;
+  await user.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      appLockoutMinutes: req.body.appLockoutMinutes,
+    },
+  });
+});

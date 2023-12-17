@@ -10,6 +10,7 @@ const mongoSanaitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const cors = require('cors');
+const profilePhotoRouter = require('./routes/profilePhotoRouter');
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use(hpp());
 
 app.use('/api/v1', authRouter);
 app.use('/api/v1/user', userRouter);
+app.use('/api/v1/profile-photo', profilePhotoRouter);
 app.use('/api/v1/general-passwords', generalpasswordsRouter);
 app.use('/api/v1/two-factor', twoFactorAuthRouter);
 app.use('*', (req, res) => {

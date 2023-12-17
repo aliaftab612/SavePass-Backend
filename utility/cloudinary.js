@@ -19,7 +19,11 @@ const canAccessFile = (filePath) => {
   });
 };
 
-const uplodadFile = async (localFilePath) => {
+const getPublicIdFromFileUrl = (fileUrl) => {
+  return fileUrl.split('/').at(-1).split('.').at(-2);
+};
+
+exports.uploadFile = async (localFilePath) => {
   if (!(await canAccessFile(localFilePath))) {
     return [false, 'File Upload Exception: File Not Accessible!'];
   }
@@ -35,4 +39,14 @@ const uplodadFile = async (localFilePath) => {
   }
 };
 
-module.exports = uplodadFile;
+exports.deleteFile = async (fileUrl, resourceType) => {
+  try {
+    await cloudinary.uploader.destroy(getPublicIdFromFileUrl(fileUrl), {
+      resource_type: resourceType,
+    });
+
+    return [true, null];
+  } catch (err) {
+    return [false, 'File Delete Exception: ' + err.message];
+  }
+};
