@@ -11,6 +11,7 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 const cors = require('cors');
 const profilePhotoRouter = require('./routes/profilePhotoRouter');
+const passkeysAuthRouter = require('./routes/passkeysAuthRouter');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/v1/user', userRouter);
 app.use('/api/v1/profile-photo', profilePhotoRouter);
 app.use('/api/v1/general-passwords', generalpasswordsRouter);
 app.use('/api/v1/two-factor', twoFactorAuthRouter);
+app.use('/api/v1/passkeys-auth', passkeysAuthRouter);
 app.use('*', (req, res) => {
   res.status(404).json({
     status: 'fail',

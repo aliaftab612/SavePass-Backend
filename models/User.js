@@ -4,6 +4,30 @@ const argon2 = require('argon2');
 const crypto = require('crypto');
 const cryptoHelpers = require('../utility/cryptoHelpers');
 
+const passkeyEncryptedEncryptionKeysSchema = mongoose.Schema(
+  {
+    credentialId: {
+      type: String,
+      required: [true, 'credentialId is required!'],
+    },
+    publicRSAKey: {
+      type: String,
+      required: [true, 'publicRSAKey is required!'],
+    },
+    encryptedPrivateRSAKey: {
+      type: String,
+      required: [true, 'encryptedPrivateRSAKey is required!'],
+    },
+    encryptedVaultEncryptionKey: {
+      type: String,
+      required: [true, 'encryptedVaultEncryptionKey is required!'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const generalPasswordsSchema = mongoose.Schema({
   website: {
     type: String,
@@ -72,6 +96,9 @@ const userSchema = mongoose.Schema({
   authenticatorAppSecret: {
     type: String,
     select: false,
+  },
+  passkeyEncryptedEncryptionKeys: {
+    type: [passkeyEncryptedEncryptionKeysSchema],
   },
 });
 

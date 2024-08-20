@@ -4,6 +4,7 @@ const asyncHander = require('../utility/asyncHandler');
 exports.getUser = (req, res) => {
   req.user.generalPasswords = undefined;
   req.user.__v = undefined;
+  req.user.passkeyEncryptedEncryptionKeys = undefined;
 
   res.status(200).json({
     status: 'success',

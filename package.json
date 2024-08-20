@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@passwordlessdev/passwordless-nodejs": "^0.2.0",
     "argon2": "^0.30.3",
     "cloudinary": "^1.41.0",
     "cookie-parser": "^1.4.6",
