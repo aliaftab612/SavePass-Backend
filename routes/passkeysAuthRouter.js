@@ -1,22 +1,42 @@
 const { Router } = require('express');
-const { protect } = require('../controllers/authController');
+const {
+  protect,
+  verifyMasterPassword,
+  scopeResolver,
+} = require('../controllers/authController');
 const {
   passkeysRegistrationBegin,
   passkeysRegistrationComplete,
   getUserPasskeyCredentials,
   deleteUserPasskeyCredential,
   savePasskeyEncryptedEncryptionKey,
+  verifyReAuth,
 } = require('../controllers/passkeysAuthController');
+const SCOPES = require('../utility/scopes');
 
 const router = new Router();
 
-router.post('/signup/begin', protect, passkeysRegistrationBegin);
-router.post('/signup/complete', protect, passkeysRegistrationComplete);
-router.get('/credentials/list', protect, getUserPasskeyCredentials);
-router.delete('/credentials/delete', protect, deleteUserPasskeyCredential);
+router.use(protect);
+
+router.post('/re-auth/verify', verifyReAuth);
+router.get('/credentials/list', getUserPasskeyCredentials);
+
+router.delete(
+  '/credentials/delete',
+  scopeResolver.bind({ scope: SCOPES.REMOVE_PASSKEY }),
+  verifyMasterPassword,
+  deleteUserPasskeyCredential
+);
+
+router.use(
+  scopeResolver.bind({ scope: SCOPES.CREATE_PASSKEY }),
+  verifyMasterPassword
+);
+
+router.post('/signup/begin', passkeysRegistrationBegin);
+router.post('/signup/complete', passkeysRegistrationComplete);
 router.post(
   '/passkey-encrypted-encryption-key',
-  protect,
   savePasskeyEncryptedEncryptionKey
 );
 

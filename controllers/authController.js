@@ -47,22 +47,57 @@ exports.signup = asyncHander(async (req, res) => {
 });
 
 const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id, token_type: 'auth' }, process.env.JWT_SECRET, {
     expiresIn: +process.env.JWT_EXPIRES_IN,
   });
 };
 
 exports.verifyMasterPassword = asyncHander(async (req, res, next) => {
+  const userId = req.user._id;
+  const authToken = req.authToken;
+  const currentScope = req.scope;
+
   if (!req.body.password) {
-    throw new ApiError(400, 'Please provide password');
+    throw new ApiError(400, 'Please provide password/passkey verify token');
   }
 
-  const user = await User.findById(req.user._id).select(
-    '+password +passwordHashingSalt'
-  );
+  if (req.body.isPasskeyReAuth == undefined) {
+    throw new ApiError(400, 'Please provide isPasskeyReAuth');
+  }
 
-  if (!(await user.comparePassword(req.body.password))) {
-    throw new ApiError(401, 'User Verfication Failed!');
+  if (req.body.isPasskeyReAuth) {
+    let decoded;
+    try {
+      decoded = jwt.verify(req.body.password, process.env.JWT_SECRET);
+    } catch (err) {
+      if (err instanceof jwt.JsonWebTokenError) {
+        throw new ApiError(400, 'ReAuth token invalid!');
+      }
+
+      throw err;
+    }
+
+    if (
+      !(
+        decoded.id == userId &&
+        decoded.token_type === 'reAuth' &&
+        decoded.authToken === authToken
+      )
+    ) {
+      throw new ApiError(400, 'ReAuth token invalid!');
+    }
+
+    if (decoded.scope !== currentScope) {
+      throw new ApiError(400, 'ReAuth token invalid!');
+    }
+  } else {
+    const user = await User.findById(req.user._id).select(
+      '+password +passwordHashingSalt'
+    );
+
+    if (!(await user.comparePassword(req.body.password))) {
+      throw new ApiError(400, 'User Verfication Failed!');
+    }
   }
 
   next();
@@ -195,6 +230,10 @@ exports.protect = asyncHander(async (req, res, next) => {
     throw new ApiError(401, 'Token invalid!');
   }
 
+  if (decoded.token_type !== 'auth') {
+    throw new ApiError(401, 'Token invalid!');
+  }
+
   // Check if user still exists
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
@@ -206,6 +245,7 @@ exports.protect = asyncHander(async (req, res, next) => {
 
   // Grant access to protected route
   req.user = currentUser;
+  req.authToken = token;
   next();
 });
 
@@ -242,3 +282,8 @@ exports.logout = asyncHander(async (req, res) => {
     status: 'success',
   });
 });
+
+exports.scopeResolver = function (req, _, next) {
+  req.scope = this.scope;
+  next();
+};

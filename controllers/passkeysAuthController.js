@@ -5,6 +5,9 @@ const {
   RegisterOptions,
   Converters,
 } = require('@passwordlessdev/passwordless-nodejs');
+const User = require('../models/User');
+const SCOPES = require('../utility/scopes');
+const jwt = require('jsonwebtoken');
 
 const _passwordlessClient = new PasswordlessClient(
   process.env.PASSWORDLESS_API_SECRET
@@ -51,6 +54,8 @@ exports.getUserPasskeyCredentials = asyncHander(async (req, res) => {
 });
 
 exports.deleteUserPasskeyCredential = asyncHander(async (req, res) => {
+  const user = req.user;
+
   if (!req.body.credentialId) {
     throw new ApiError(400, 'Please provide Credential Id!');
   }
@@ -58,6 +63,20 @@ exports.deleteUserPasskeyCredential = asyncHander(async (req, res) => {
   await _passwordlessClient.deleteCredential(
     Converters.base64UrlToUint8Array(req.body.credentialId)
   );
+
+  const passkeyEncryptedEncryptionKeyIndex =
+    user.passkeyEncryptedEncryptionKeys.findIndex(
+      (passkeyEncryptedEncryptionKey) =>
+        passkeyEncryptedEncryptionKey.credentialId === req.body.credentialId
+    );
+
+  if (passkeyEncryptedEncryptionKeyIndex != -1)
+    user.passkeyEncryptedEncryptionKeys.splice(
+      passkeyEncryptedEncryptionKeyIndex,
+      1
+    );
+
+  await user.save();
 
   res.status(204).json({
     status: 'success',
@@ -108,3 +127,46 @@ exports.savePasskeyEncryptedEncryptionKey = asyncHander(async (req, res) => {
     },
   });
 });
+
+exports.verifyReAuth = asyncHander(async (req, res) => {
+  const user = req.user;
+
+  if (!req.body.token) {
+    throw new ApiError(400, 'Please provide token');
+  }
+
+  if (!req.body.scope) {
+    throw new ApiError(400, 'Please provide scope!');
+  }
+
+  if (!Object.values(SCOPES).find((value) => req.body.scope === value)) {
+    throw new ApiError(400, 'Invalid value of scope!');
+  }
+
+  const verifiedUser = await _passwordlessClient.verifyToken(req.body.token);
+
+  if (verifiedUser && verifiedUser.success) {
+    if (verifiedUser.userId != user._id) {
+      throw new ApiError(400, 'Passskey does not belong to current user!');
+    }
+  } else {
+    throw new ApiError(400, 'Invalid Token');
+  }
+
+  const verifyToken = signReAuthToken(user._id, req.authToken, req.body.scope);
+
+  res.status(200).json({
+    status: 'success',
+    verifyToken,
+  });
+});
+
+const signReAuthToken = (id, authToken, scope) => {
+  return jwt.sign(
+    { id, token_type: 'reAuth', authToken, scope },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: +process.env.RE_AUTH_TOKEN_JWT_EXPIRES_IN,
+    }
+  );
+};
