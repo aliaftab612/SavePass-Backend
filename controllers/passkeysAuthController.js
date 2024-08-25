@@ -135,12 +135,10 @@ exports.verifyReAuth = asyncHander(async (req, res) => {
     throw new ApiError(400, 'Please provide token');
   }
 
-  if (!req.body.scope) {
-    throw new ApiError(400, 'Please provide scope!');
-  }
-
-  if (!Object.values(SCOPES).find((value) => req.body.scope === value)) {
-    throw new ApiError(400, 'Invalid value of scope!');
+  if (req.body.scope) {
+    if (!Object.values(SCOPES).find((value) => req.body.scope === value)) {
+      throw new ApiError(400, 'Invalid value of scope!');
+    }
   }
 
   const verifiedUser = await _passwordlessClient.verifyToken(req.body.token);
@@ -153,12 +151,23 @@ exports.verifyReAuth = asyncHander(async (req, res) => {
     throw new ApiError(400, 'Invalid Token');
   }
 
-  const verifyToken = signReAuthToken(user._id, req.authToken, req.body.scope);
+  if (req.body.scope) {
+    const verifyToken = signReAuthToken(
+      user._id,
+      req.authToken,
+      req.body.scope
+    );
 
-  res.status(200).json({
-    status: 'success',
-    verifyToken,
-  });
+    res.status(200).json({
+      status: 'success',
+      verifyToken,
+    });
+  } else {
+    res.status(200).json({
+      status: 'success',
+      verifyToken: true,
+    });
+  }
 });
 
 const signReAuthToken = (id, authToken, scope) => {
@@ -170,3 +179,39 @@ const signReAuthToken = (id, authToken, scope) => {
     }
   );
 };
+
+exports.getPasskeyEncryptedEncryptionKey = asyncHander(async (req, res) => {
+  const user = req.user;
+
+  if (!req.params.credentialId) {
+    throw new ApiError(400, 'Please provide credentialId!');
+  }
+
+  const passkeyEncryptedEncryptionKey =
+    user.passkeyEncryptedEncryptionKeys.find(
+      (value) => value.credentialId === req.params.credentialId
+    );
+
+  if (!passkeyEncryptedEncryptionKey) {
+    throw new ApiError(
+      404,
+      'passkeyEncryptedEncryptionKey with provided credentialId Not Found!'
+    );
+  }
+
+  passkeyEncryptedEncryptionKey._id = undefined;
+  passkeyEncryptedEncryptionKey.createdAt = undefined;
+  passkeyEncryptedEncryptionKey.updatedAt = undefined;
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      credentialId: passkeyEncryptedEncryptionKey.credentialId,
+      publicRSAKey: passkeyEncryptedEncryptionKey.publicRSAKey,
+      encryptedPrivateRSAKey:
+        passkeyEncryptedEncryptionKey.encryptedPrivateRSAKey,
+      encryptedVaultEncryptionKey:
+        passkeyEncryptedEncryptionKey.encryptedVaultEncryptionKey,
+    },
+  });
+});

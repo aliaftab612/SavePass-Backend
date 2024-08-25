@@ -11,6 +11,7 @@ const {
   deleteUserPasskeyCredential,
   savePasskeyEncryptedEncryptionKey,
   verifyReAuth,
+  getPasskeyEncryptedEncryptionKey,
 } = require('../controllers/passkeysAuthController');
 const SCOPES = require('../utility/scopes');
 
@@ -20,6 +21,10 @@ router.use(protect);
 
 router.post('/re-auth/verify', verifyReAuth);
 router.get('/credentials/list', getUserPasskeyCredentials);
+router.get(
+  '/passkey-encrypted-encryption-key/:credentialId',
+  getPasskeyEncryptedEncryptionKey
+);
 
 router.delete(
   '/credentials/delete',
