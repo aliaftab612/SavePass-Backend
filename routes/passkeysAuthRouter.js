@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const {
   protect,
-  verifyMasterPassword,
+  protectSensitive,
   scopeResolver,
 } = require('../controllers/authController');
 const {
@@ -12,10 +12,13 @@ const {
   savePasskeyEncryptedEncryptionKey,
   verifyReAuth,
   getPasskeyEncryptedEncryptionKey,
+  verifySignIn,
 } = require('../controllers/passkeysAuthController');
 const SCOPES = require('../utility/scopes');
 
 const router = new Router();
+
+router.post('/signin/verify', verifySignIn);
 
 router.use(protect);
 
@@ -29,13 +32,13 @@ router.get(
 router.delete(
   '/credentials/delete',
   scopeResolver.bind({ scope: SCOPES.REMOVE_PASSKEY }),
-  verifyMasterPassword,
+  protectSensitive,
   deleteUserPasskeyCredential
 );
 
 router.use(
   scopeResolver.bind({ scope: SCOPES.CREATE_PASSKEY }),
-  verifyMasterPassword
+  protectSensitive
 );
 
 router.post('/signup/begin', passkeysRegistrationBegin);

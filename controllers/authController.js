@@ -37,7 +37,7 @@ exports.signup = asyncHander(async (req, res) => {
   }
 
   // Create token
-  const token = signToken(newUser._id);
+  const token = this.signToken(newUser._id);
 
   // Send response
   res.status(201).json({
@@ -46,13 +46,13 @@ exports.signup = asyncHander(async (req, res) => {
   });
 });
 
-const signToken = (id) => {
+exports.signToken = (id) => {
   return jwt.sign({ id, token_type: 'auth' }, process.env.JWT_SECRET, {
     expiresIn: +process.env.JWT_EXPIRES_IN,
   });
 };
 
-exports.verifyMasterPassword = asyncHander(async (req, res, next) => {
+exports.protectSensitive = asyncHander(async (req, res, next) => {
   const userId = req.user._id;
   const authToken = req.authToken;
   const currentScope = req.scope;
@@ -91,17 +91,32 @@ exports.verifyMasterPassword = asyncHander(async (req, res, next) => {
       throw new ApiError(400, 'ReAuth token invalid!');
     }
   } else {
-    const user = await User.findById(req.user._id).select(
-      '+password +passwordHashingSalt'
-    );
-
-    if (!(await user.comparePassword(req.body.password))) {
-      throw new ApiError(400, 'User Verfication Failed!');
-    }
+    await verifyMasterPassword(req.user._id, req.body.password);
   }
 
   next();
 });
+
+exports.checkMasterPassword = asyncHander(async (req, res) => {
+  if (!req.body.password) {
+    throw new ApiError(400, 'Please provide password!');
+  }
+  await verifyMasterPassword(req.user._id, req.body.password);
+
+  res.status(200).json({
+    status: 'success',
+  });
+});
+
+const verifyMasterPassword = async (userId, password) => {
+  const user = await User.findById(userId).select(
+    '+password +passwordHashingSalt'
+  );
+
+  if (!(await user.comparePassword(password))) {
+    throw new ApiError(400, 'User Verfication Failed!');
+  }
+};
 
 exports.preLogin = asyncHander(async (req, res) => {
   let hashIterations = 10000;
@@ -163,7 +178,7 @@ exports.login = asyncHander(async (req, res) => {
   }
 
   // If everything ok, send token to client
-  const token = signToken(user._id);
+  const token = this.signToken(user._id);
 
   res.status(200).json({
     status: 'success',

@@ -11,7 +11,7 @@ router.get('/', twoFactorAuthController.getTwoFactorProvidersEnabledStatus);
 
 router.use(
   authController.scopeResolver.bind({ scope: SCOPES.MANAGE_TOTP_2FA }),
-  authController.verifyMasterPassword
+  authController.protectSensitive
 );
 
 router.post('/get-authenticator', twoFactorAuthController.getAuthenticator);

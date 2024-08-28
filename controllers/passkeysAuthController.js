@@ -8,6 +8,7 @@ const {
 const User = require('../models/User');
 const SCOPES = require('../utility/scopes');
 const jwt = require('jsonwebtoken');
+const { signToken } = require('./authController');
 
 const _passwordlessClient = new PasswordlessClient(
   process.env.PASSWORDLESS_API_SECRET
@@ -213,5 +214,47 @@ exports.getPasskeyEncryptedEncryptionKey = asyncHander(async (req, res) => {
       encryptedVaultEncryptionKey:
         passkeyEncryptedEncryptionKey.encryptedVaultEncryptionKey,
     },
+  });
+});
+
+exports.verifySignIn = asyncHander(async (req, res) => {
+  if (!req.body.token) {
+    throw new ApiError(401, 'Token not provided!');
+  }
+
+  const verifiedUser = await _passwordlessClient.verifyToken(req.body.token);
+
+  if (!(verifiedUser && verifiedUser.success)) {
+    throw new ApiError(401, 'Invalid Token');
+  }
+
+  const user = await User.findById(verifiedUser.userId);
+
+  if (!user) {
+    throw new ApiError(
+      401,
+      'User with userId associated with this passkey not found!'
+    );
+  }
+
+  //There is some issue on passwordless site it returns wrond credential Id,
+  //So as of now not using this but later once it's fixed will use this
+  /*if (
+    !user.passkeyEncryptedEncryptionKeys.find(
+      (value) => value.credentialId === verifiedUser.credentialId
+    )
+  ) {
+    throw new ApiError(
+      401,
+      'encrypted vault encryption Key not found for this passkey!'
+    );
+  }*/
+
+  const authToken = signToken(user._id);
+
+  res.status(200).json({
+    status: 'success',
+    authToken,
+    username: user.email,
   });
 });
